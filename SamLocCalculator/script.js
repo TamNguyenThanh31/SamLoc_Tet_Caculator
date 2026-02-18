@@ -425,6 +425,10 @@ function setupEventListeners() {
                 showAlert('Vui lòng nhập số lá cho người thua (hoặc chọn Cóng)', '📋');
                 return;
             }
+            if (!isCong && leaves > 10) {
+                showAlert('Số lá tối đa 10 (1–10 lá). Cóng = 15 lá.', '📋');
+                return;
+            }
             loserData.push({ id, leaves, isCong });
         }
 
