@@ -23,6 +23,11 @@
   padding: 0;
 }
 
+html {
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+
 body {
   font-family: 'Be Vietnam Pro', sans-serif;
   background: var(--tet-bg);
@@ -31,7 +36,12 @@ body {
     radial-gradient(ellipse 60% 40% at 100% 100%, rgba(212, 175, 55, 0.08), transparent);
   color: var(--tet-text);
   min-height: 100vh;
-  padding: 20px;
+  min-height: 100dvh;
+  padding: 12px;
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+  padding-left: max(12px, env(safe-area-inset-left));
+  padding-right: max(12px, env(safe-area-inset-right));
+  padding-top: max(12px, env(safe-area-inset-top));
   display: flex;
   justify-content: center;
   align-items: flex-start;
@@ -95,6 +105,24 @@ h1::after {
   color: var(--tet-gold-light);
   font-weight: 600;
   margin-bottom: 4px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.card-header h2 {
+  flex: 1;
+  min-width: 0;
+}
+
+.card-header button {
+  flex-shrink: 0;
 }
 
 /* Player list */
@@ -174,6 +202,17 @@ button.secondary {
 button.danger {
   background: linear-gradient(180deg, #b71c1c 0%, var(--tet-red-dark) 100%);
   color: #fff5e6;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+button:disabled:hover {
+  transform: none;
+  box-shadow: none;
 }
 
 /* Form inputs */
@@ -324,7 +363,15 @@ select option {
 .history-details > div {
   display: flex;
   justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
   padding: 4px 0;
+  flex-wrap: wrap;
+}
+
+.history-details > div span:last-child {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .history-details .positive {
@@ -443,6 +490,168 @@ select option {
 .mb-2 { margin-bottom: 12px; }
 .flex-row { display: flex; gap: 10px; align-items: center; }
 .w-full { width: 100%; }
+
+/* ========== RESPONSIVE (Mobile First) ========== */
+
+/* Mobile: base */
+h1 {
+  font-size: 1.4rem;
+  margin-bottom: 16px;
+}
+
+.card {
+  padding: 14px;
+  margin-bottom: 12px;
+  border-radius: 10px;
+}
+
+.card h2 {
+  font-size: 1rem;
+}
+
+/* Touch targets >= 44px cho mobile */
+button {
+  min-height: 44px;
+  padding: 12px 14px;
+  touch-action: manipulation;
+}
+
+/* iOS: 16px tránh zoom khi focus input */
+input[type="text"],
+input[type="number"],
+select {
+  font-size: 16px;
+  min-height: 44px;
+  padding: 12px 14px;
+}
+
+.player-item {
+  padding: 10px 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.player-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Actions card */
+.actions-card {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.actions-card #new-round-btn {
+  flex: 2;
+  min-width: 140px;
+}
+.actions-card #chat-heo-btn {
+  flex: 1;
+  min-width: 100px;
+}
+
+.modal {
+  padding: 12px;
+  align-items: flex-start;
+  overflow-y: auto;
+}
+
+.modal-content {
+  padding: 20px 16px;
+  margin: auto;
+  max-height: calc(100vh - 24px);
+  overflow-y: auto;
+}
+
+.close {
+  top: 8px;
+  right: 12px;
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tab button {
+  padding: 10px 12px;
+  font-size: 0.9rem;
+}
+
+.settings-hint {
+  font-size: 0.75rem;
+}
+
+/* Loser row: stack trên mobile */
+#losers-container .flex-row {
+  flex-wrap: wrap;
+}
+
+#losers-container .flex-row input[type="number"] {
+  flex: 1;
+  min-width: 80px;
+}
+
+.popup-overlay {
+  padding: 16px;
+  align-items: flex-start;
+  overflow-y: auto;
+}
+
+.popup-box {
+  margin: auto;
+  padding: 20px 16px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+}
+
+.popup-actions button {
+  min-width: 90px;
+  min-height: 44px;
+}
+
+/* Tablet & up */
+@media (min-width: 480px) {
+  body {
+    padding: 16px;
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+    padding-top: max(16px, env(safe-area-inset-top));
+  }
+  h1 {
+    font-size: 1.6rem;
+    margin-bottom: 20px;
+  }
+  .card {
+    padding: 18px;
+    margin-bottom: 16px;
+  }
+  .modal-content {
+    padding: 24px;
+  }
+}
+
+@media (min-width: 768px) {
+  body {
+    padding: 20px;
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+    padding-left: max(20px, env(safe-area-inset-left));
+    padding-right: max(20px, env(safe-area-inset-right));
+    padding-top: max(20px, env(safe-area-inset-top));
+  }
+  h1 {
+    font-size: 1.75rem;
+    margin-bottom: 24px;
+  }
+  .container {
+    max-width: 560px;
+  }
+}
 
 /* Loser input blocks in round modal */
 #losers-container > div {
