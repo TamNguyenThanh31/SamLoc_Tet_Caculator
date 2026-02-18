@@ -1,7 +1,19 @@
 // --- Global State ---
-let players = JSON.parse(localStorage.getItem('samloc_players')) || [];
-let history = JSON.parse(localStorage.getItem('samloc_history')) || [];
-let betPerCard = Math.max(1, parseInt(localStorage.getItem('samloc_bet_per_card'), 10) || 1); // tiền 1 lá (k)
+const MIN_PLAYERS = 2;
+const MAX_PLAYERS = 5;
+
+function loadFromStorage(key, fallback) {
+    try {
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : fallback;
+    } catch (_) {
+        return fallback;
+    }
+}
+
+let players = loadFromStorage('samloc_players', []);
+let history = loadFromStorage('samloc_history', []);
+let betPerCard = Math.max(1, parseInt(localStorage.getItem('samloc_bet_per_card'), 10) || 1);
 const CONG_PENALTY = 15; // 15 lá
 const BAO_SAM_AMOUNT = 20; // 20 lá
 const CHAT_HEO_LA = 20; // 20 lá
@@ -91,8 +103,21 @@ function updateChatHeoLabels() {
 
 // --- Core Logic ---
 
+function syncBetFromInput() {
+    const el = document.getElementById('bet-per-card');
+    if (el) {
+        const v = Math.max(1, parseInt(el.value, 10) || 1);
+        betPerCard = v;
+        el.value = v;
+    }
+}
+
 function addPlayer(name) {
     if (!name.trim()) return;
+    if (players.length >= MAX_PLAYERS) {
+        showAlert(`Tối đa ${MAX_PLAYERS} người chơi.`, '👥');
+        return;
+    }
     const newPlayer = {
         id: Date.now().toString(),
         name: name.trim(),
@@ -104,6 +129,10 @@ function addPlayer(name) {
 }
 
 function removePlayer(id) {
+    if (players.length <= MIN_PLAYERS) {
+        showAlert(`Cần ít nhất ${MIN_PLAYERS} người chơi.`, '👥');
+        return;
+    }
     showConfirm('Xóa người chơi này? (Lịch sử sẽ bị ảnh hưởng nếu reset)', '🗑️').then(ok => {
         if (ok) {
             players = players.filter(p => p.id !== id);
@@ -121,7 +150,11 @@ function updateBalance(playerId, amount) {
 }
 
 function processRoundNormal(winnerId, loserData) {
-    // loserData: [{id, leaves, isCong}]
+    syncBetFromInput();
+    if (players.length < MIN_PLAYERS) {
+        showAlert(`Cần ít nhất ${MIN_PLAYERS} người chơi.`, '👥');
+        return;
+    }
     let totalWin = 0;
     const roundDetails = [];
 
@@ -152,7 +185,11 @@ function processRoundNormal(winnerId, loserData) {
 }
 
 function processBaoSam(reporterId, isSuccess, blockerId) {
-    // Logic: 
+    syncBetFromInput();
+    if (players.length < MIN_PLAYERS) {
+        showAlert(`Cần ít nhất ${MIN_PLAYERS} người chơi.`, '👥');
+        return;
+    } 
     // Thành công: Ăn mỗi nhà 20 lá.
     // Thất bại: Đền làng = 20 * (N-1). Nếu có người chặn, người chặn ăn hết. Nếu không, chia đều (ít gặp).
     // User logic: "thất bại thì 20 lá nhân số người chơi còn lại... người chặn ăn"
@@ -200,6 +237,11 @@ function processBaoSam(reporterId, isSuccess, blockerId) {
 }
 
 function processChatHeo(chopperId, victimId) {
+    syncBetFromInput();
+    if (players.length < MIN_PLAYERS) {
+        showAlert(`Cần ít nhất ${MIN_PLAYERS} người chơi.`, '👥');
+        return;
+    }
     const amount = CHAT_HEO_LA * betPerCard;
     updateBalance(victimId, -amount);
     updateBalance(chopperId, amount);
@@ -230,9 +272,13 @@ function addHistory(type, details) {
 }
 
 function saveData() {
-    localStorage.setItem('samloc_players', JSON.stringify(players));
-    localStorage.setItem('samloc_history', JSON.stringify(history));
-    localStorage.setItem('samloc_bet_per_card', String(betPerCard));
+    try {
+        localStorage.setItem('samloc_players', JSON.stringify(players));
+        localStorage.setItem('samloc_history', JSON.stringify(history));
+        localStorage.setItem('samloc_bet_per_card', String(betPerCard));
+    } catch (_) {
+        console.warn('Không thể lưu dữ liệu vào localStorage');
+    }
 }
 
 function resetGame() {
@@ -251,6 +297,8 @@ function resetGame() {
 
 function renderPlayers() {
     playerListEl.innerHTML = '';
+    const addBtn = document.getElementById('add-player-btn');
+    if (addBtn) addBtn.disabled = players.length >= MAX_PLAYERS;
     
     // Dropdowns update
     updatePlayerSelects();
@@ -384,14 +432,20 @@ function setupEventListeners() {
     // Reset Game
     document.getElementById('reset-game-btn').addEventListener('click', resetGame);
 
-    // Chặt Heo Logic (Quick Action)
+    // Chặt Heo Logic
     document.getElementById('chat-heo-btn').addEventListener('click', () => {
-        const chopper = prompt("Ai chặt? (Nhập tên chính xác hoặc số thứ tự, nhưng ở đây dùng logic đơn giản trước)");
-        // Để đơn giản cho UI, mở modal chọn người
+        if (players.length < MIN_PLAYERS || players.length > MAX_PLAYERS) {
+            showAlert(`Cần từ ${MIN_PLAYERS} đến ${MAX_PLAYERS} người chơi.`, '👥');
+            return;
+        }
         openModal('chat-modal');
     });
 
     document.getElementById('confirm-chat').addEventListener('click', () => {
+        if (players.length < MIN_PLAYERS || players.length > MAX_PLAYERS) {
+            showAlert(`Cần từ ${MIN_PLAYERS} đến ${MAX_PLAYERS} người chơi.`, '👥');
+            return;
+        }
         const chopperId = document.getElementById('chat-winner').value;
         const victimId = document.getElementById('chat-loser').value;
         if (chopperId && victimId && chopperId !== victimId) {
@@ -403,7 +457,25 @@ function setupEventListeners() {
     });
 
     // Round Results
-    document.getElementById('new-round-btn').addEventListener('click', () => openModal('round-modal'));
+    document.getElementById('new-round-btn').addEventListener('click', () => {
+        if (players.length < MIN_PLAYERS || players.length > MAX_PLAYERS) {
+            showAlert(`Cần từ ${MIN_PLAYERS} đến ${MAX_PLAYERS} người chơi để nhập kết quả.`, '👥');
+            return;
+        }
+        openModal('round-modal');
+    });
+
+    // Cóng checkbox: disable ô số lá khi chọn Cóng
+    document.getElementById('losers-container').addEventListener('change', (e) => {
+        if (e.target.classList.contains('is-cong-checkbox')) {
+            const flexRow = e.target.closest('.flex-row');
+            const input = flexRow?.querySelector('.loser-leaves');
+            if (input) {
+                input.disabled = e.target.checked;
+                if (e.target.checked) input.value = '';
+            }
+        }
+    });
 
     document.getElementById('winner-select').addEventListener('change', renderLoserInputs);
 
@@ -411,6 +483,10 @@ function setupEventListeners() {
     document.getElementById('submit-normal').addEventListener('click', () => {
         const winnerId = document.getElementById('winner-select').value;
         if (!winnerId) { showAlert('Chọn người nhất!', '🏆'); return; }
+        if (players.length < MIN_PLAYERS || players.length > MAX_PLAYERS) {
+            showAlert(`Cần từ ${MIN_PLAYERS} đến ${MAX_PLAYERS} người chơi.`, '👥');
+            return;
+        }
 
         const loserInputs = document.querySelectorAll('.loser-leaves');
         const congCheckboxes = document.querySelectorAll('.is-cong-checkbox');
@@ -447,6 +523,14 @@ function setupEventListeners() {
         const isSuccess = result === 'success';
         if (!isSuccess && !blockerId) {
             showAlert('Vui lòng chọn ai bắt sâm (hoặc chọn Làng ăn)', '🎴');
+            return;
+        }
+        if (!isSuccess && blockerId && blockerId !== 'none' && blockerId === reporterId) {
+            showAlert('Người báo sâm không thể tự bắt sâm mình.', '🎴');
+            return;
+        }
+        if (players.length < MIN_PLAYERS || players.length > MAX_PLAYERS) {
+            showAlert(`Cần từ ${MIN_PLAYERS} đến ${MAX_PLAYERS} người chơi.`, '👥');
             return;
         }
 
