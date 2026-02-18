@@ -23,9 +23,11 @@ function showAlert(message, icon = '⚠️') {
   const overlay = document.getElementById('popup-alert-overlay');
   document.getElementById('popup-alert-icon').textContent = icon;
   document.getElementById('popup-alert-message').textContent = message;
-  overlay.classList.add('show');
+  overlay.style.display = 'flex';
+  overlay.classList.remove('closing');
+  requestAnimationFrame(() => overlay.classList.add('show'));
   return new Promise(resolve => {
-    const close = () => { overlay.classList.remove('show'); resolve(); };
+    const close = () => animatePopupClose(overlay, resolve);
     document.getElementById('popup-alert-ok').onclick = close;
     overlay.onclick = (e) => { if (e.target === overlay) close(); };
   });
@@ -35,10 +37,12 @@ function showConfirm(message, icon = '❓') {
   const overlay = document.getElementById('popup-confirm-overlay');
   document.getElementById('popup-confirm-icon').textContent = icon;
   document.getElementById('popup-confirm-message').textContent = message;
-  overlay.classList.add('show');
+  overlay.style.display = 'flex';
+  overlay.classList.remove('closing');
+  requestAnimationFrame(() => overlay.classList.add('show'));
   return new Promise(resolve => {
-    const ok = () => { overlay.classList.remove('show'); resolve(true); };
-    const cancel = () => { overlay.classList.remove('show'); resolve(false); };
+    const ok = () => animatePopupClose(overlay, () => resolve(true));
+    const cancel = () => animatePopupClose(overlay, () => resolve(false));
     document.getElementById('popup-confirm-ok').onclick = ok;
     document.getElementById('popup-confirm-cancel').onclick = cancel;
     overlay.onclick = (e) => { if (e.target === overlay) cancel(); };
@@ -52,12 +56,13 @@ function showPrompt(title, message, placeholder = 'Nhập...') {
   document.getElementById('popup-prompt-message').textContent = message || '';
   input.placeholder = placeholder;
   input.value = '';
-  overlay.classList.add('show');
+  overlay.style.display = 'flex';
+  overlay.classList.remove('closing');
+  requestAnimationFrame(() => overlay.classList.add('show'));
   input.focus();
   return new Promise(resolve => {
     const done = (value) => {
-      overlay.classList.remove('show');
-      resolve(value);
+      animatePopupClose(overlay, () => resolve(value));
     };
     document.getElementById('popup-prompt-ok').onclick = () => done(input.value.trim());
     document.getElementById('popup-prompt-cancel').onclick = () => done(null);
@@ -368,15 +373,37 @@ function updatePlayerSelects() {
 }
 
 // --- Specific Modal UI Logic ---
+const ANIM_DUR = 280;
+
 function openModal(id) {
-    document.getElementById(id).style.display = 'flex';
+    const el = document.getElementById(id);
+    el.style.display = 'flex';
+    el.classList.remove('closing');
+    requestAnimationFrame(() => el.classList.add('show'));
     updatePlayerSelects();
     updateChatHeoLabels();
     if(id === 'round-modal') openTab(event, 'NormalWin');
 }
 
 function closeModal(id) {
-    document.getElementById(id).style.display = 'none';
+    const el = document.getElementById(id);
+    if (!el || !el.classList.contains('show')) return;
+    el.classList.add('closing');
+    el.classList.remove('show');
+    setTimeout(() => {
+        el.style.display = 'none';
+        el.classList.remove('closing');
+    }, ANIM_DUR);
+}
+
+function animatePopupClose(overlay, resolve) {
+    overlay.classList.add('closing');
+    overlay.classList.remove('show');
+    setTimeout(() => {
+        overlay.style.display = 'none';
+        overlay.classList.remove('closing');
+        resolve();
+    }, ANIM_DUR);
 }
 
 function openTab(evt, tabName) {
@@ -538,16 +565,17 @@ function setupEventListeners() {
         closeModal('round-modal');
     });
 
-    // Close Modals
-    document.querySelectorAll('.close').forEach(btn => {
+    // Close Modals (animated)
+    document.querySelectorAll('.modal .close').forEach(btn => {
         btn.onclick = function() {
-            btn.closest('.modal').style.display = 'none';
+            const modal = btn.closest('.modal');
+            if (modal) closeModal(modal.id);
         }
     });
     
-    window.onclick = function(event) {
+    window.addEventListener('click', function(event) {
         if (event.target.classList.contains('modal')) {
-            event.target.style.display = "none";
+            closeModal(event.target.id);
         }
-    }
+    });
 }
