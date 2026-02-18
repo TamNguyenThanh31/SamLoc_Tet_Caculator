@@ -55,8 +55,29 @@ h1 {
 
 h1::before,
 h1::after {
-  content: ' 🀄 ';
+  content: ' ♠ ';
   opacity: 0.9;
+}
+
+h1::after {
+  content: ' ♥ ';
+}
+
+/* Cấu hình tiền */
+.card-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.card-settings input[type="number"] {
+  max-width: 120px;
+}
+
+.settings-hint {
+  font-size: 0.8rem;
+  color: var(--tet-text-muted);
+  margin: 0;
 }
 
 /* Cards - phong cách Tết */

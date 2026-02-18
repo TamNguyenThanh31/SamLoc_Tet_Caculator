@@ -1,10 +1,10 @@
 // --- Global State ---
 let players = JSON.parse(localStorage.getItem('samloc_players')) || [];
 let history = JSON.parse(localStorage.getItem('samloc_history')) || [];
-const BASE_BET = 1; // 1k
-const CHAT_HEO_AMOUNT = 20; // 20k
+let betPerCard = Math.max(1, parseInt(localStorage.getItem('samloc_bet_per_card'), 10) || 1); // tiền 1 lá (k)
 const CONG_PENALTY = 15; // 15 lá
 const BAO_SAM_AMOUNT = 20; // 20 lá
+const CHAT_HEO_LA = 20; // 20 lá
 
 // --- Popup (thay alert / confirm / prompt) ---
 function showAlert(message, icon = '⚠️') {
@@ -64,10 +64,30 @@ const historyListEl = document.getElementById('history-list');
 
 // Init
 document.addEventListener('DOMContentLoaded', () => {
+    const betInput = document.getElementById('bet-per-card');
+    if (betInput) {
+        betInput.value = betPerCard;
+        betInput.addEventListener('change', () => {
+            const v = Math.max(1, parseInt(betInput.value, 10) || 1);
+            betPerCard = v;
+            betInput.value = v;
+            saveData();
+            updateChatHeoLabels();
+        });
+    }
+    updateChatHeoLabels();
     renderPlayers();
     renderHistory();
     setupEventListeners();
 });
+
+function updateChatHeoLabels() {
+    const amt = CHAT_HEO_LA * betPerCard;
+    const label1 = document.getElementById('chat-heo-label');
+    const label2 = document.getElementById('chat-heo-lose-label');
+    if (label1) label1.textContent = `Người Chặt (Ăn ${amt}k = 20 lá):`;
+    if (label2) label2.textContent = `Bị Chặt (Mất ${amt}k = 20 lá):`;
+}
 
 // --- Core Logic ---
 
@@ -108,9 +128,9 @@ function processRoundNormal(winnerId, loserData) {
     loserData.forEach(loser => {
         let penalty = 0;
         if (loser.isCong) {
-            penalty = CONG_PENALTY * BASE_BET; // 15k
+            penalty = CONG_PENALTY * betPerCard;
         } else {
-            penalty = loser.leaves * BASE_BET; // x k
+            penalty = loser.leaves * betPerCard;
         }
         
         // Thối heo (nếu có - chưa implement chi tiết, tạm tính vào lá)
@@ -138,15 +158,16 @@ function processBaoSam(reporterId, isSuccess, blockerId) {
     // User logic: "thất bại thì 20 lá nhân số người chơi còn lại... người chặn ăn"
     
     const playersCount = players.length;
-    let totalAmount = BAO_SAM_AMOUNT * (playersCount - 1) * BASE_BET;
+    let totalAmount = BAO_SAM_AMOUNT * (playersCount - 1) * betPerCard;
     const roundDetails = [];
 
     if (isSuccess) {
         // Reporter win
+        const perPerson = BAO_SAM_AMOUNT * betPerCard;
         players.forEach(p => {
             if (p.id !== reporterId) {
-                updateBalance(p.id, -BAO_SAM_AMOUNT * BASE_BET);
-                roundDetails.push({ name: p.name, amount: -BAO_SAM_AMOUNT, note: 'Thua Sâm' });
+                updateBalance(p.id, -perPerson);
+                roundDetails.push({ name: p.name, amount: -perPerson, note: 'Thua Sâm' });
             }
         });
         updateBalance(reporterId, totalAmount);
@@ -179,13 +200,13 @@ function processBaoSam(reporterId, isSuccess, blockerId) {
 }
 
 function processChatHeo(chopperId, victimId) {
-    // Instant transaction: Victim -20, Chopper +20
-    updateBalance(victimId, -CHAT_HEO_AMOUNT);
-    updateBalance(chopperId, CHAT_HEO_AMOUNT);
+    const amount = CHAT_HEO_LA * betPerCard;
+    updateBalance(victimId, -amount);
+    updateBalance(chopperId, amount);
     
     addHistory('Chặt Heo', [
-        { name: getPlayerName(chopperId), amount: CHAT_HEO_AMOUNT, note: 'Chặt' },
-        { name: getPlayerName(victimId), amount: -CHAT_HEO_AMOUNT, note: 'Bị Chặt' }
+        { name: getPlayerName(chopperId), amount, note: 'Chặt' },
+        { name: getPlayerName(victimId), amount: -amount, note: 'Bị Chặt' }
     ]);
     saveData();
     renderPlayers();
@@ -211,6 +232,7 @@ function addHistory(type, details) {
 function saveData() {
     localStorage.setItem('samloc_players', JSON.stringify(players));
     localStorage.setItem('samloc_history', JSON.stringify(history));
+    localStorage.setItem('samloc_bet_per_card', String(betPerCard));
 }
 
 function resetGame() {
@@ -301,6 +323,7 @@ function updatePlayerSelects() {
 function openModal(id) {
     document.getElementById(id).style.display = 'flex';
     updatePlayerSelects();
+    updateChatHeoLabels();
     if(id === 'round-modal') openTab(event, 'NormalWin');
 }
 
@@ -342,7 +365,7 @@ function renderLoserInputs() {
                     <label style="flex:1; display:flex; align-items:center;">
                         <input type="checkbox" class="is-cong-checkbox" data-id="${p.id}" style="width:auto; margin-right:5px;"> Cóng (15 lá)
                     </label>
-                    <input type="number" class="w-full loser-leaves" data-id="${p.id}" placeholder="Số lá (1-13)" min="1" max="13" style="flex:2;">
+                    <input type="number" class="w-full loser-leaves" data-id="${p.id}" placeholder="Số lá (1-10)" min="1" max="10" style="flex:2;">
                 </div>
             `;
             container.appendChild(div);
