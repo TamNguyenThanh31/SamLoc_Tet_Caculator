@@ -840,3 +840,137 @@ select {
   width: auto;
   margin-right: 8px;
 }
+
+/* --- Settlement (Quyết Toán) --- */
+
+button.settlement {
+  background: linear-gradient(180deg, #2e7d32 0%, #1b5e20 100%);
+  color: #fff;
+  flex: 1 1 100%;
+}
+
+button.settlement:hover {
+  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.5);
+}
+
+.settlement-content {
+  max-width: 460px;
+}
+
+.settlement-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.settlement-player {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  font-size: 0.95rem;
+  animation: settlementItemIn var(--dur-normal) var(--ease-out) both;
+}
+
+.settlement-player:nth-child(1) { animation-delay: 0s; }
+.settlement-player:nth-child(2) { animation-delay: 0.03s; }
+.settlement-player:nth-child(3) { animation-delay: 0.06s; }
+.settlement-player:nth-child(4) { animation-delay: 0.09s; }
+.settlement-player:nth-child(5) { animation-delay: 0.12s; }
+
+.settlement-divider {
+  text-align: center;
+  margin: 16px 0;
+  position: relative;
+}
+
+.settlement-divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(212, 175, 55, 0.25);
+}
+
+.settlement-divider span {
+  position: relative;
+  background: var(--tet-card);
+  padding: 0 12px;
+  font-size: 0.85rem;
+  color: var(--tet-gold);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.settlement-tx {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  border-left: 3px solid var(--tet-gold);
+  animation: settlementItemIn var(--dur-normal) var(--ease-out) both;
+}
+
+@keyframes settlementItemIn {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.tx-from {
+  color: #ff8a80;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.tx-arrow {
+  color: var(--tet-gold);
+  font-size: 1.1em;
+  flex-shrink: 0;
+}
+
+.tx-to {
+  color: var(--tet-gold-light);
+  font-weight: 600;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tx-amount {
+  font-weight: 700;
+  color: #fff;
+  background: rgba(212, 175, 55, 0.2);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.95em;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.settlement-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+.settlement-actions button {
+  flex: 1;
+  min-width: 130px;
+  font-size: 0.9rem;
+}

@@ -134,11 +134,7 @@ function addPlayer(name) {
 }
 
 function removePlayer(id) {
-    if (players.length <= MIN_PLAYERS) {
-        showAlert(`Cần ít nhất ${MIN_PLAYERS} người chơi.`, '👥');
-        return;
-    }
-    showConfirm('Xóa người chơi này? (Lịch sử sẽ bị ảnh hưởng nếu reset)', '🗑️').then(ok => {
+    showConfirm('Xóa người chơi này?', '🗑️').then(ok => {
         if (ok) {
             players = players.filter(p => p.id !== id);
             saveData();
@@ -294,6 +290,115 @@ function resetGame() {
             saveData();
             renderPlayers();
             renderHistory();
+        }
+    });
+}
+
+// --- Settlement (Quyết Toán) ---
+
+function calculateSettlement() {
+    const creditors = [];
+    const debtors = [];
+
+    players.forEach(p => {
+        if (p.balance > 0) creditors.push({ name: p.name, amount: p.balance });
+        else if (p.balance < 0) debtors.push({ name: p.name, amount: Math.abs(p.balance) });
+    });
+
+    creditors.sort((a, b) => b.amount - a.amount);
+    debtors.sort((a, b) => b.amount - a.amount);
+
+    const transactions = [];
+    let i = 0, j = 0;
+
+    while (i < debtors.length && j < creditors.length) {
+        const transfer = Math.min(debtors[i].amount, creditors[j].amount);
+        if (transfer > 0) {
+            transactions.push({
+                from: debtors[i].name,
+                to: creditors[j].name,
+                amount: transfer
+            });
+        }
+        debtors[i].amount -= transfer;
+        creditors[j].amount -= transfer;
+        if (debtors[i].amount === 0) i++;
+        if (creditors[j].amount === 0) j++;
+    }
+
+    return transactions;
+}
+
+function showSettlement() {
+    if (players.length === 0) {
+        showAlert('Chưa có người chơi nào.', '👥');
+        return;
+    }
+
+    const allZero = players.every(p => p.balance === 0);
+    if (allZero) {
+        showAlert('Tất cả đang hòa, không cần quyết toán!', '🤝');
+        return;
+    }
+
+    const transactions = calculateSettlement();
+    const container = document.getElementById('settlement-result');
+    container.innerHTML = '';
+
+    // Summary
+    const summaryDiv = document.createElement('div');
+    summaryDiv.className = 'settlement-summary';
+    let summaryHtml = '';
+    players.forEach(p => {
+        if (p.balance !== 0) {
+            const cls = p.balance > 0 ? 'balance-positive' : 'balance-negative';
+            const sign = p.balance > 0 ? '+' : '';
+            summaryHtml += `<div class="settlement-player"><span>${p.name}</span><span class="${cls}">${sign}${p.balance}k</span></div>`;
+        }
+    });
+    summaryDiv.innerHTML = summaryHtml;
+    container.appendChild(summaryDiv);
+
+    // Divider
+    const hr = document.createElement('div');
+    hr.className = 'settlement-divider';
+    hr.innerHTML = '<span>Cách chia tiền</span>';
+    container.appendChild(hr);
+
+    // Transactions
+    if (transactions.length === 0) {
+        container.innerHTML += '<p style="text-align:center; color:var(--tet-text-muted);">Không có giao dịch nào.</p>';
+    } else {
+        transactions.forEach((t, idx) => {
+            const row = document.createElement('div');
+            row.className = 'settlement-tx';
+            row.style.animationDelay = `${idx * 0.06}s`;
+            row.innerHTML = `
+                <span class="tx-from">${t.from}</span>
+                <span class="tx-arrow">→</span>
+                <span class="tx-to">${t.to}</span>
+                <span class="tx-amount">${t.amount}k</span>
+            `;
+            container.appendChild(row);
+        });
+    }
+
+    openModal('settlement-modal');
+}
+
+function settlementClose() {
+    closeModal('settlement-modal');
+}
+
+function settlementReset() {
+    showConfirm('Xóa toàn bộ dữ liệu (người chơi, lịch sử, số dư) và bắt đầu mới?', '🧹').then(ok => {
+        if (ok) {
+            players = [];
+            history = [];
+            saveData();
+            renderPlayers();
+            renderHistory();
+            closeModal('settlement-modal');
         }
     });
 }
@@ -458,6 +563,11 @@ function setupEventListeners() {
 
     // Reset Game
     document.getElementById('reset-game-btn').addEventListener('click', resetGame);
+
+    // Quyết Toán
+    document.getElementById('settlement-btn').addEventListener('click', showSettlement);
+    document.getElementById('settlement-close-btn').addEventListener('click', settlementClose);
+    document.getElementById('settlement-reset-btn').addEventListener('click', settlementReset);
 
     // Chặt Heo Logic
     document.getElementById('chat-heo-btn').addEventListener('click', () => {

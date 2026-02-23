@@ -34,6 +34,7 @@
     <div class="card actions-card">
         <button id="new-round-btn">NHẬP KẾT QUẢ VÁN</button>
         <button id="chat-heo-btn" class="secondary">Chặt Heo</button>
+        <button id="settlement-btn" class="settlement">Quyết Toán 💰</button>
     </div>
 
     <!-- History -->
@@ -107,6 +108,22 @@
         <select id="chat-loser" class="player-select mb-2"></select>
 
         <button id="confirm-chat" class="w-full mt-2">Xác Nhận Chuyển Tiền</button>
+    </div>
+</div>
+
+<!-- Modal: Quyết Toán -->
+<div id="settlement-modal" class="modal">
+    <div class="modal-content settlement-content">
+        <span class="close">&times;</span>
+        <h2 style="margin-bottom:8px; text-align:center;">Quyết Toán 💰</h2>
+        <p style="text-align:center; color:var(--tet-text-muted); font-size:0.85em; margin-bottom:16px;">Ai trả ai, bao nhiêu — ít giao dịch nhất</p>
+
+        <div id="settlement-result"></div>
+
+        <div class="settlement-actions">
+            <button id="settlement-close-btn" class="secondary">Đóng (Giữ dữ liệu)</button>
+            <button id="settlement-reset-btn" class="danger">Xóa hết & Chơi Mới</button>
+        </div>
     </div>
 </div>
 
